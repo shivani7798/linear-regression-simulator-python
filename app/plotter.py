@@ -1,8 +1,12 @@
 import matplotlib
-matplotlib.use('TkAgg')
+#matplotlib.use('TkAgg')
+import matplotlib
+matplotlib.use("Agg")   # use non-GUI backend (for servers/headless)
+
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
+
 
 class RegressionPlotter:
     def __init__(self, container):

@@ -1,17 +1,13 @@
+# app/simulator.py
 import numpy as np
 
 class LinearRegressionGD:
     """
-    From-scratch univariate linear regression using batch gradient descent.
-
-    Usage:
-        model = LinearRegressionGD(learning_rate=0.01)
-        model.set_data(X, y)
-        m, b, losses = model.train(epochs=200)
+    Univariate linear regression trained with batch gradient descent.
+    Provides a train_generator method that yields updates for realtime plotting.
     """
-    def __init__(self, learning_rate=0.01, verbose=False):
+    def __init__(self, learning_rate=0.01):
         self.learning_rate = float(learning_rate)
-        self.verbose = verbose
         self.m = 0.0
         self.b = 0.0
         self.X = None
@@ -20,9 +16,13 @@ class LinearRegressionGD:
     def set_data(self, X, y):
         X = np.array(X, dtype=float)
         y = np.array(y, dtype=float)
-        assert X.shape == y.shape, "X and y must be same shape"
+        if X.shape != y.shape:
+            raise ValueError("X and y must have same shape")
         self.X = X
         self.y = y
+        # reset params when data is set
+        self.m = 0.0
+        self.b = 0.0
 
     def predict(self, X=None):
         if X is None:
@@ -41,13 +41,13 @@ class LinearRegressionGD:
         db = (-2.0 / N) * np.sum(error)
         return dm, db
 
-    def train(self, epochs=200, callback=None, reset_params=True):
+    def train_generator(self, epochs=200, update_every=1, yield_updates=True):
+        """
+        Train and yield (epoch, m, b, loss) every `update_every` epochs.
+        If yield_updates=False, will run silently and return final m,b,loss.
+        """
         if self.X is None or self.y is None:
             raise ValueError("Data not set. Call set_data(X, y) first.")
-
-        if reset_params:
-            self.m = 0.0
-            self.b = 0.0
 
         losses = []
         for epoch in range(1, int(epochs) + 1):
@@ -58,10 +58,8 @@ class LinearRegressionGD:
             loss = self.compute_loss()
             losses.append(loss)
 
-            if callback is not None:
-                callback(epoch, self.m, self.b, loss)
+            if yield_updates and (epoch % update_every == 0 or epoch == epochs):
+                yield epoch, self.m, self.b, loss
 
-            if self.verbose and epoch % max(1, epochs // 10) == 0:
-                print(f"Epoch {epoch}/{epochs} - loss: {loss:.4f} m: {self.m:.4f} b: {self.b:.4f}")
-
-        return self.m, self.b, losses
+        if not yield_updates:
+            return self.m, self.b, losses
